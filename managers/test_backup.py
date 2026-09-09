@@ -45,10 +45,11 @@ if __name__ == '__main__':
         db_port=args.db_port or 5432,
         db_username=args.db_username or 'postgres',
         db_passwd=args.db_passwd or None,
-        pg_dump_v=args.pg_dump_v or '18.4',
+        pg_dump_v=args.pg_dump_v or None, # '18.4'
     )
     #pg_dump_path = bm.pg_manager.get_pg_dump(v='18.4')
     #logger.info('pg_dump path %s' % pg_dump_path)
+    logger.info('pg_version: %s' % bm.pg_manager.pg_version)
 
     #bm.pg_manager.create_backup()
     result = bm.pg_manager.create_direct_s3_backup(

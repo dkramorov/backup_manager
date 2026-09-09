@@ -28,15 +28,21 @@ class PostgresqlBackupManager:
         self.db_port = int(db_port)
         self.db_username = db_username
         self.db_passwd = db_passwd
-        query = 'SHOW server_version'
-        self.pg_version = self.raw_sql(query=query)
-        if self.pg_version:
-            logger.info('raw_sql: %s, %s' % (query, self.pg_version))
 
         self.gzip_path = search_binary('gzip')
         if not self.gzip_path:
             raise Exception('gzip not found')
         self.pg_dump_path = search_binary('pg_dump')
+        # Проверка версии на сервере (если установлена psycopg)
+        query = 'SHOW server_version'
+        self.pg_version = self.raw_sql(query=query)
+        if self.pg_version:
+            logger.info('raw_sql: %s, %s' % (query, self.pg_version))
+            self.pg_version = self.pg_version[0][0].split(' ')[0].strip()
+            if not self.pg_dump_path and not pg_dump_v:
+                self.pg_dump_v = self.pg_version
+                logger.info('set pg_dump_v=%s' % self.pg_dump_v)
+
         if not self.pg_dump_path or pg_dump_v:
             self.pg_dump_path = self.get_pg_dump(v=pg_dump_v)
         if not self.pg_dump_path:
