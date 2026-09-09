@@ -40,8 +40,8 @@ class PostgresqlBackupManager:
             logger.info('raw_sql: %s, %s' % (query, self.pg_version))
             self.pg_version = self.pg_version[0][0].split(' ')[0].strip()
             if not self.pg_dump_path and not pg_dump_v:
-                self.pg_dump_v = self.pg_version
-                logger.info('set pg_dump_v=%s' % self.pg_dump_v)
+                pg_dump_v = self.pg_version
+                logger.info('set pg_dump_v=%s' % pg_dump_v)
 
         if not self.pg_dump_path or pg_dump_v:
             self.pg_dump_path = self.get_pg_dump(v=pg_dump_v)
@@ -64,6 +64,7 @@ class PostgresqlBackupManager:
         cd_tmp = 'cd %s' % workdir
         folder = archive.split('.tar.gz')[0]
         pg_dump_path = '%s/%s/src/bin/pg_dump/pg_dump' % (workdir, folder)
+        logger.info('checking %s ' % (pg_dump_path, ))
         if not os.path.exists(pg_dump_path):
             archive_full_path = os.path.join(workdir, archive)
             if force or not os.path.exists(archive_full_path):
@@ -76,6 +77,13 @@ class PostgresqlBackupManager:
                 os.system('%s && cd %s && ./configure && make -C src/bin' % (cd_tmp, folder))
         if with_install:
             os.system('%s && cd %s && ./configure && make -C src/bin install' % (cd_tmp, folder))
+        logger.info("""[INFO]: Если возникают ошибки со сборкой, необходимо указать путь к icu4c
+    export ICU_CFLAGS="-I/opt/homebrew/opt/icu4c/include"
+    export ICU_LIBS="-L/opt/homebrew/opt/icu4c/lib -licui18n -licuuc -licudata"
+    При ошибках с libpq (Library not loaded: /usr/local/pgsql/lib/libpq.5.dylib)
+    find /opt -name libpq.5.dylib
+    sudo mkdir -p /usr/local/pgsql/lib
+    sudo ln -s /opt/homebrew/Cellar/postgresql@18/18.4/lib/postgresql/libpq.5.dylib /usr/local/pgsql/lib/libpq.5.dylib""")
         os.system('%s --version' % pg_dump_path)
         if os.path.exists(pg_dump_path):
             self.pg_dump_path = pg_dump_path
