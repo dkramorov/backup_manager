@@ -25,9 +25,13 @@ class PostgresqlBackupManager:
         """
         self.db_name = db_name
         self.db_host = db_host
-        self.db_port = db_port
+        self.db_port = int(db_port)
         self.db_username = db_username
         self.db_passwd = db_passwd
+        query = 'SHOW server_version'
+        self.pg_version = self.raw_sql(query=query)
+        if self.pg_version:
+            logger.info('raw_sql: %s, %s' % (query, self.pg_version))
 
         self.gzip_path = search_binary('gzip')
         if not self.gzip_path:
@@ -131,7 +135,8 @@ class PostgresqlBackupManager:
                                 aws_endpoint_url: str,
                                 aws_access_key_id: str,
                                 aws_secret_access_key_id: str,
-                                bucket: str = 'tmp', location: str = 'tmp'):
+                                bucket: str = 'tmp',
+                                location: str = 'tmp'):
         """Выполнить резервное копирование базы данных напрямую в S3
            без использования локальной папки через awscli
            :param aws_endpoint_url: адрес до хранилища (например, https://storage.yandexcloud.net)
@@ -146,6 +151,8 @@ class PostgresqlBackupManager:
             raise Exception('aws (awscli) not found')
         if not self.db_name:
             raise Exception('База данных не указана')
+        if not aws_access_key_id or not aws_secret_access_key_id:
+            raise Exception('Необходимо указать ключи для доступа к S3 через aws')
         backup_path = '%s_%s.sql' % (
             self.db_name,
             datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'),
@@ -178,7 +185,32 @@ class PostgresqlBackupManager:
 
         backup_took = int(time.time() - started)
         #logger.info('backup took: %s, size: %s' % (backup_took, backup_size))
-        print(backup_result)
+        logger.info(backup_result)
+        self.remote_path = '%s/%s' % (location, compressed_path)
+        return backup_result
+
+    def raw_sql(self, query: str = 'SHOW server_version'):
+        """SQL запрос в базу,
+           например, чтобы скачать pg_dump надо определить версию
+           можно определять версию через
+           SHOW server_version_num;
+           SELECT version();
+        """
+        try:
+            import psycopg
+        except ImportError:
+            logger.info('[ERROR]: psycopg not found')
+            return
+        with psycopg.connect(
+            dbname=self.db_name,
+            user=self.db_username,
+            password=self.db_passwd,
+            host=self.db_host,
+            port=self.db_port,
+        ) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                return list(cur.fetchall())
 
 
 
