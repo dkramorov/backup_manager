@@ -15,13 +15,15 @@ class PostgresqlBackupManager:
                  db_port: int = 5432,
                  db_username: str = None,
                  db_passwd: str = None,
-                 pg_dump_v: str = None):
+                 pg_dump_v: str = None,
+                 workdir: str = '/tmp'):
         """Инициализация
            :param db_name: имя бд
            :param db_host: адрес сервера бд
            :param db_port: порт сервера бд
            :param db_username: имя пользователя бд
            :param pg_dump_v: версия pg_dump, которая нужна, например, 15.15 или 18.4
+           :param workdir: папка, куда дистрибутивы будут скачиваться
         """
         self.db_name = db_name
         self.db_host = db_host
@@ -44,7 +46,7 @@ class PostgresqlBackupManager:
                 logger.info('set pg_dump_v=%s' % pg_dump_v)
 
         if not self.pg_dump_path or pg_dump_v:
-            self.pg_dump_path = self.get_pg_dump(v=pg_dump_v)
+            self.pg_dump_path = self.get_pg_dump(v=pg_dump_v, workdir=workdir)
         if not self.pg_dump_path:
             raise Exception('pg_dump not found')
 
@@ -225,7 +227,6 @@ class PostgresqlBackupManager:
             with conn.cursor() as cur:
                 cur.execute(query)
                 return list(cur.fetchall())
-
 
 
 class BackupManager:
