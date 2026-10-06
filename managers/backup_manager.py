@@ -50,6 +50,20 @@ class PostgresqlBackupManager:
         if not self.pg_dump_path:
             raise Exception('pg_dump not found')
 
+    def get_config(self) -> dict:
+        """Возвращает конфигурацию словарем
+        """
+        return {
+            'db_name': self.db_name,
+            'db_host': self.db_host,
+            'db_port': self.db_port,
+            'db_username': self.db_username,
+            'db_passwd': self.db_passwd,
+            'gzip_path': self.gzip_path,
+            'pg_dump_path': self.pg_dump_path,
+            'pg_version': self.pg_version,
+        }
+
     def get_pg_dump(self,
                     v: str = '15.15',
                     workdir: str = '/tmp',
@@ -174,6 +188,7 @@ class PostgresqlBackupManager:
             datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'),
         )
         compressed_path = '%s.tgz' % backup_path
+        endpoint_url = '%s --endpoint-url="%s"' % (aws_path, aws_endpoint_url)
 
         cmd = '%s -h %s -p %s -U %s -Z 9 -v %s | %s --no-verify-ssl s3 cp - s3://%s/%s/%s' % (
             self.pg_dump_path,
@@ -181,7 +196,8 @@ class PostgresqlBackupManager:
             self.db_port,
             self.db_username,
             self.db_name,
-            aws_path,
+            #aws_path,
+            endpoint_url, # для совместимости со старыми версиями
             bucket,
             location,
             compressed_path,
