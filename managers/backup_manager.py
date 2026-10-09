@@ -242,7 +242,8 @@ class PostgresqlBackupManager:
         ) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
-                return list(cur.fetchall())
+                if cur.description is not None:
+                    return list(cur.fetchall())
 
 
 class BackupManager:
